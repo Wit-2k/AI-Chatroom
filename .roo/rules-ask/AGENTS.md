@@ -14,7 +14,6 @@ This file provides guidance to agents when working with code in this repository.
 
 - [`LLMClient.stream_chat()`](llm_client.py:16) 有 `system_prompt` 可选参数，但 [`DiscussionEngine`](engine.py:26) **从不传入此参数**
 - 引擎直接将 `system` 消息放入 `messages` 列表首位，绕过该参数
-- 该参数仅在 `wizard.py` 的 AI 生成角色功能中间接使用
 
 ### `run_discussion()` vs `run()` 的区别
 
@@ -26,9 +25,9 @@ This file provides guidance to agents when working with code in this repository.
 
 - [`ConfigWizard`](wizard.py:40) 内置调用 LLM 自动生成角色的功能（选项 4）
 - 生成提示词 `PERSONA_GENERATION_PROMPT` 定义在 [`wizard.py`](wizard.py:16) 顶部
-- 生成的角色使用旧格式（`system_prompt`），不使用新格式
+- 生成的角色使用新格式（`persona_prompt` + `interaction_examples`）
 
 ### 互动规范模板的注入位置
 
-- [`_INTERACTION_RULES_TEMPLATE`](config_loader.py:12) 在**读取**新格式角色时自动追加到 `system_prompt` 末尾
-- 旧格式角色不会自动追加此模板，需在 `system_prompt` 中手动包含互动规范
+- [`_INTERACTION_RULES_TEMPLATE`](config_loader.py:12) 通过 [`PersonaConfig.system_prompt`](config.py:31) property 在每次 LLM 调用时动态拼接
+- 所有角色均自动获得互动规范，无需手动在 `persona_prompt` 中重复写入

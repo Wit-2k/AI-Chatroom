@@ -30,15 +30,13 @@ uv run python main.py
 
 ## 架构关键点
 
-- **`config.json`** — 运行时配置文件，支持两种角色格式（见下方）
+- **`config.json`** — 运行时配置文件（见下方角色格式）
 - **`Summary/`** — 讨论总结自动保存目录（运行时自动创建）
 - `DiscussionEngine` 是核心，通过 `async for` 驱动，`run()` 是入口
 
-## config.json 两种格式（非显而易见）
+## config.json 角色格式
 
-`config.json` 中角色支持**新旧两种格式**，`config_loader.py` 的 [`AppConfig.from_dict()`](config_loader.py:41) 自动兼容：
-
-**新格式**（推荐）：
+`config.json` 中角色使用以下格式，由 [`AppConfig.from_dict()`](config_loader.py:41) 读取：
 
 ```json
 {
@@ -49,9 +47,7 @@ uv run python main.py
 }
 ```
 
-`persona_prompt` + `interaction_examples` 会被自动拼接为完整 `system_prompt`，互动规范模板在 [`_INTERACTION_RULES_TEMPLATE`](config_loader.py:12) 中定义。
-
-**旧格式**（兼容）：直接使用 `system_prompt` 字段。
+`persona_prompt` + `interaction_examples` 在运行时通过 [`PersonaConfig.system_prompt`](config.py:31) property 动态拼接为完整 `system_prompt`，互动规范模板在 [`_INTERACTION_RULES_TEMPLATE`](config_loader.py:12) 中定义。
 
 ## LLM 调用约定
 

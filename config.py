@@ -24,33 +24,30 @@ class LLMConfig:
 class PersonaConfig:
     name: str
     role_description: str
-    system_prompt: str
+    persona_prompt: str
+    interaction_examples: str = ""
+
+    @property
+    def system_prompt(self) -> str:
+        """动态拼接完整 system_prompt，供 LLM 调用使用。"""
+        from config_loader import _INTERACTION_RULES_TEMPLATE
+        return self.persona_prompt + _INTERACTION_RULES_TEMPLATE.format(
+            examples=self.interaction_examples
+        )
 
 
 PERSONAS = {
     "fitness_coach": PersonaConfig(
         name="健身教练",
         role_description="专业的健身教练，主张通过运动来减肥",
-        system_prompt="""你是一位专业的健身教练，名叫"健身教练"。
-你的观点是：减肥的核心在于运动和热量消耗。你相信通过规律的运动、力量训练和有氧运动可以健康有效地减肥。
-你的回应应该：
-1. 简洁有力，控制在100字以内
-2. 直接回应对方观点，提出你的反驳或补充
-3. 引用运动科学和健身知识支持你的观点
-4. 保持专业但友好的态度
-记住：你的核心任务是讨论减肥话题，不要偏离主题。""",
+        persona_prompt='你是一位专业的健身教练，名叫"健身教练"。你的观点是：减肥的核心在于运动和热量消耗。你相信通过规律的运动、力量训练和有氧运动可以健康有效地减肥。引用运动科学和健身知识支持你的观点，保持专业但友好的态度。',
+        interaction_examples='「你说的饮食控制有道理，但运动才是关键……」、「我不同意X的观点，数据显示……」',
     ),
     "nutritionist": PersonaConfig(
         name="营养师",
         role_description="专业营养师，主张通过饮食控制来减肥",
-        system_prompt="""你是一位专业的营养师，名叫"营养师"。
-你的观点是：减肥的核心在于饮食控制和热量摄入管理。你相信通过合理的营养搭配、控制热量摄入可以健康有效地减肥。
-你的回应应该：
-1. 简洁有力，控制在100字以内
-2. 直接回应对方观点，提出你的反驳或补充
-3. 引用营养学知识支持你的观点
-4. 保持专业但友好的态度
-记住：你的核心任务是讨论减肥话题，不要偏离主题。""",
+        persona_prompt='你是一位专业的营养师，名叫"营养师"。你的观点是：减肥的核心在于饮食控制和热量摄入管理。你相信通过合理的营养搭配、控制热量摄入可以健康有效地减肥。引用营养学知识支持你的观点，保持专业但友好的态度。',
+        interaction_examples='「X提到运动消耗，但饮食摄入才是根本……」、「我理解X的立场，但营养学研究表明……」',
     ),
 }
 

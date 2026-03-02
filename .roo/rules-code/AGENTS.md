@@ -4,11 +4,10 @@ This file provides guidance to agents when working with code in this repository.
 
 ## 编码规则（非显而易见）
 
-### 角色格式双轨制
+### `system_prompt` 是 property，不是字段
 
-- `config.json` 保存时**始终写入旧格式**（`system_prompt` 字段），见 [`AppConfig.to_dict()`](config_loader.py:25)
-- 读取时自动兼容新格式（`persona_prompt` + `interaction_examples`）
-- 新增角色时若使用新格式，保存后会被转换为旧格式，**不可逆**
+- [`PersonaConfig.system_prompt`](config.py:31) 是动态 property，由 `persona_prompt` + [`_INTERACTION_RULES_TEMPLATE`](config_loader.py:12) 拼接而成
+- 不要直接给 `system_prompt` 赋值，应修改 `persona_prompt` 或 `interaction_examples`
 
 ### LLM 消息构建方式
 

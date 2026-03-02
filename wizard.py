@@ -25,7 +25,8 @@ PERSONA_GENERATION_PROMPT = """请生成 {count} 个适合多话题讨论的 AI 
         {{
             "name": "角色名称（简短，不超过 5 个字）",
             "role_description": "角色描述（立场、性格、说话风格），不超过 30 字",
-            "system_prompt": "完整的系统提示词，包含角色的立场、观点倾向、说话风格等，不超过 200 字"
+            "persona_prompt": "角色核心人设提示词，包含角色的立场、观点倾向、说话风格等，不超过 200 字",
+            "interaction_examples": "2-3 个互动句式示例，如「你说的X，我认为……」、「X忽略了……」"
         }}
     ]
 }}
@@ -33,8 +34,9 @@ PERSONA_GENERATION_PROMPT = """请生成 {count} 个适合多话题讨论的 AI 
 注意：
 1. name 要简洁有辨识度
 2. role_description 要概括角色的核心特点
-4. system_prompt 须要求角色的发言不超过 100 字
-4. 确保输出合法的 JSON 格式"""
+3. persona_prompt 描述角色人设，不需要包含互动规范（系统会自动追加）
+4. interaction_examples 提供该角色风格的典型回应句式
+5. 确保输出合法的 JSON 格式"""
 
 
 class ConfigWizard:
@@ -278,7 +280,8 @@ class ConfigWizard:
                         PersonaConfig(
                             name=p.get("name", ""),
                             role_description=p.get("role_description", ""),
-                            system_prompt=p.get("system_prompt", ""),
+                            persona_prompt=p.get("persona_prompt", ""),
+                            interaction_examples=p.get("interaction_examples", ""),
                         )
                     )
                 if personas:
@@ -376,22 +379,36 @@ class ConfigWizard:
             return None
 
         self.console.print(
-            "\n[dim]角色提示词示例：[/dim]"
-            "\n[dim]你是一位专业的健身教练，名叫'健身教练'。你的观点是：减肥的核心在于运动...[/dim]\n"
+            "\n[dim]角色人设提示词示例：[/dim]"
+            "\n[dim]你是一位专业的健身教练，名叫'健身教练'。你坚信减肥的核心在于运动...[/dim]\n"
         )
 
-        default_prompt = existing.system_prompt if existing else ""
-        system_prompt = self._prompt_with_back(
-            f"角色提示词（决定角色的行为和观点）",
-            default=default_prompt,
+        default_persona = existing.persona_prompt if existing else ""
+        persona_prompt = self._prompt_with_back(
+            f"角色人设提示词（描述角色的立场、性格和说话风格）",
+            default=default_persona,
         )
-        if system_prompt is None:
+        if persona_prompt is None:
+            return None
+
+        self.console.print(
+            "\n[dim]互动句式示例：[/dim]"
+            "\n[dim]「你说的X，我认为……」、「X忽略了一个关键点……」[/dim]\n"
+        )
+
+        default_examples = existing.interaction_examples if existing else ""
+        interaction_examples = self._prompt_with_back(
+            f"互动句式示例（该角色风格的典型回应句式，可留空）",
+            default=default_examples,
+        )
+        if interaction_examples is None:
             return None
 
         return PersonaConfig(
             name=name,
             role_description=description,
-            system_prompt=system_prompt,
+            persona_prompt=persona_prompt,
+            interaction_examples=interaction_examples,
         )
 
     def _select_persona(self, personas: List[PersonaConfig]) -> Optional[int]:

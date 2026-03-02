@@ -7,7 +7,7 @@ from rich.panel import Panel
 
 from config import PersonaConfig
 
-# 公共互动规范模板，注入到每个角色的 system_prompt 末尾。
+# 公共互动规范模板，拼接在 persona_prompt 末尾构成完整 system_prompt。
 # config.json 中只需填写各角色独有的回应句式示例（interaction_examples）。
 _INTERACTION_RULES_TEMPLATE = (
     "\n\n【互动规范】每次发言必须先回应历史中某位发言者的具体论点——"
@@ -23,13 +23,13 @@ class AppConfig:
     max_rounds: int = 3
 
     def to_dict(self) -> dict:
-        # 保存时仍使用 system_prompt 字段，保持与旧格式的兼容性
         return {
             "personas": [
                 {
                     "name": p.name,
                     "role_description": p.role_description,
-                    "system_prompt": p.system_prompt,
+                    "persona_prompt": p.persona_prompt,
+                    "interaction_examples": p.interaction_examples,
                 }
                 for p in self.personas
             ],
@@ -41,20 +41,12 @@ class AppConfig:
     def from_dict(cls, data: dict) -> "AppConfig":
         personas = []
         for p in data.get("personas", []):
-            # 兼容新格式（persona_prompt + interaction_examples）和旧格式（system_prompt）
-            if "persona_prompt" in p:
-                examples = p.get("interaction_examples", "")
-                system_prompt = p["persona_prompt"] + _INTERACTION_RULES_TEMPLATE.format(
-                    examples=examples
-                )
-            else:
-                system_prompt = p.get("system_prompt", "")
-
             personas.append(
                 PersonaConfig(
                     name=p.get("name", ""),
                     role_description=p.get("role_description", ""),
-                    system_prompt=system_prompt,
+                    persona_prompt=p.get("persona_prompt", ""),
+                    interaction_examples=p.get("interaction_examples", ""),
                 )
             )
         return cls(
@@ -137,8 +129,8 @@ class ConfigLoader:
             for i, persona in enumerate(config.personas):
                 if not persona.name:
                     errors.append(f"角色 {i+1} 缺少名称（name）")
-                if not persona.system_prompt:
-                    errors.append(f"角色 {i+1} 缺少提示词（system_prompt 或 persona_prompt）")
+                if not persona.persona_prompt:
+                    errors.append(f"角色 {i+1} 缺少提示词（persona_prompt）")
 
         if config.max_rounds < 1 or config.max_rounds > 10:
             errors.append(f"轮数（max_rounds）必须在 1-10 之间，当前值：{config.max_rounds}")

@@ -9,11 +9,10 @@ This file provides guidance to agents when working with code in this repository.
 - `DiscussionState` 只追加消息（[`add_message()`](models.py:34)），无删除/修改接口
 - 历史记录在整个讨论生命周期内不可变，总结基于完整历史生成
 
-### 角色格式转换不可逆
+### `PersonaConfig.system_prompt` 是动态 property
 
-- [`AppConfig.to_dict()`](config_loader.py:25) 保存时**始终输出旧格式**（`system_prompt`）
-- 新格式（`persona_prompt` + `interaction_examples`）读入后立即被合并为 `system_prompt`，原始字段丢失
-- 设计意图：保持 `config.json` 格式稳定，避免多版本格式共存
+- [`PersonaConfig`](config.py:23) 的 `system_prompt` 是 property，运行时由 `persona_prompt` + [`_INTERACTION_RULES_TEMPLATE`](config_loader.py:12) 动态拼接
+- `config.json` 只存储 `persona_prompt` 和 `interaction_examples`，不存储完整 `system_prompt`
 
 ### `DiscussionEngine` 不是无状态的
 
