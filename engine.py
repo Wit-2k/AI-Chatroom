@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import random
 import re
 from datetime import datetime
 from typing import AsyncGenerator, List, Tuple, Optional
@@ -121,20 +122,29 @@ class DiscussionEngine:
         构建 user 消息内容。
         system_prompt 已在调用处单独作为 system 消息传入，此处只返回 user prompt 字符串。
         """
-        # 找到最新一条非当前角色的发言
-        last_message: Optional[Message] = None
-        for msg in reversed(self.state.messages):
-            if msg.role == MessageRole.ASSISTANT and msg.speaker != speaker.name:
-                last_message = msg
-                break
+        # 收集所有非当前角色的历史发言
+        other_messages = [
+            msg for msg in self.state.messages
+            if msg.role == MessageRole.ASSISTANT and msg.speaker != speaker.name
+        ]
 
-        # 构建历史记录（排除最新一条，避免重复展示）
-        history_lines = []
-        for msg in self.state.messages:
-            if msg.role == MessageRole.ASSISTANT and msg is not last_message:
-                history_lines.append(f"【{msg.speaker}】：{msg.content}")
+        # 随机抽取 1-2 条历史发言作为"需要回应的目标"
+        # 历史不足时取全部；开场无历史则不抽取
+        if other_messages:
+            sample_count = min(random.randint(1, 2), len(other_messages))
+            target_messages = random.sample(other_messages, sample_count)
+            # 按原始顺序排列，保持时序感
+            target_messages.sort(key=lambda m: self.state.messages.index(m))
+        else:
+            target_messages = []
 
-        history_text = "\n".join(history_lines) if history_lines else "（暂无更早的发言记录）"
+        # 构建完整历史记录（全部展示，供角色了解上下文）
+        history_lines = [
+            f"【{msg.speaker}】：{msg.content}"
+            for msg in self.state.messages
+            if msg.role == MessageRole.ASSISTANT
+        ]
+        history_text = "\n".join(history_lines) if history_lines else "（暂无发言记录）"
 
         # 判断轮次阶段
         is_opening = (round_num == 1 and not self.state.messages)
@@ -145,29 +155,32 @@ class DiscussionEngine:
         elif is_final:
             round_hint = (
                 f"这是第 {round_num} 轮，也是最后一轮。"
-                "请先回应上一位发言者的具体论点，再做出你的最终立场总结。"
+                "请回应下方指定发言，并做出你的最终立场总结。"
             )
         else:
             round_hint = (
                 f"这是第 {round_num} 轮（共 {self.max_rounds} 轮）。"
-                "请先回应上一位发言者的具体论点，再进一步阐述你的观点。"
+                "请回应下方指定发言，再进一步阐述你的观点。"
             )
 
-        # 构建最新发言高亮块
-        if last_message:
-            latest_block = (
-                f"\n【最新发言 — 你必须先回应这条】\n"
-                f"【{last_message.speaker}】：{last_message.content}\n"
+        # 构建需要回应的发言高亮块
+        if target_messages:
+            targets_text = "\n".join(
+                f"【{m.speaker}】：{m.content}" for m in target_messages
+            )
+            respond_block = (
+                f"\n【请重点回应以下发言】\n"
+                f"{targets_text}\n"
             )
         else:
-            latest_block = ""
+            respond_block = ""
 
         user_prompt = f"""【讨论主题】
 {self.topic}
 
-【之前的对话记录】
+【完整对话记录】
 {history_text}
-{latest_block}
+{respond_block}
 【你的发言任务】
 {round_hint}
 发言请控制在100字以内，直接输出内容，不要加任何角色名前缀或说明文字。"""
