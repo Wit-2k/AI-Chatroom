@@ -30,6 +30,7 @@ class AppConfig:
                     "role_description": p.role_description,
                     "persona_prompt": p.persona_prompt,
                     "interaction_examples": p.interaction_examples,
+                    "model_name": p.model_name,
                 }
                 for p in self.personas
             ],
@@ -47,6 +48,7 @@ class AppConfig:
                     role_description=p.get("role_description", ""),
                     persona_prompt=p.get("persona_prompt", ""),
                     interaction_examples=p.get("interaction_examples", ""),
+                    model_name=p.get("model_name", ""),
                 )
             )
         return cls(

@@ -404,11 +404,24 @@ class ConfigWizard:
         if interaction_examples is None:
             return None
 
+        self.console.print(
+            "\n[dim]指定模型名称可让该角色使用不同的 LLM，留空则使用全局默认模型。[/dim]"
+            "\n[dim]示例：gpt-4o、deepseek-chat、claude-3-5-sonnet-20241022[/dim]\n"
+        )
+        default_model = existing.model_name if existing else ""
+        model_name = self._prompt_with_back(
+            "该角色使用的模型名称（可留空，使用全局默认）",
+            default=default_model,
+        )
+        if model_name is None:
+            return None
+
         return PersonaConfig(
             name=name,
             role_description=description,
             persona_prompt=persona_prompt,
             interaction_examples=interaction_examples,
+            model_name=model_name,
         )
 
     def _select_persona(self, personas: List[PersonaConfig]) -> Optional[int]:
@@ -424,6 +437,7 @@ class ConfigWizard:
         table.add_column("编号", style="dim", width=6)
         table.add_column("名称", style="green", width=12)
         table.add_column("描述", width=30)
+        table.add_column("模型", style="blue", width=15)
         table.add_column("提示词预览", width=40)
 
         for i, p in enumerate(personas):
@@ -432,7 +446,8 @@ class ConfigWizard:
                 if len(p.system_prompt) > 40
                 else p.system_prompt
             )
-            table.add_row(str(i + 1), p.name, p.role_description, prompt_preview)
+            model_display = p.model_name if p.model_name else "[dim]默认[/dim]"
+            table.add_row(str(i + 1), p.name, p.role_description, model_display, prompt_preview)
 
         self.console.print(table)
 

@@ -18,15 +18,19 @@ class LLMClient:
         messages: List[dict],
         system_prompt: Optional[str] = None,
         max_tokens: int = 500,
+        model_name: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
         api_messages = []
         if system_prompt:
             api_messages.append({"role": "system", "content": system_prompt})
         api_messages.extend(messages)
 
+        # 角色可指定独立模型，为空时 fallback 到全局配置
+        effective_model = model_name if model_name else self.config.model_name
+
         try:
             stream = await self.client.chat.completions.create(
-                model=self.config.model_name,
+                model=effective_model,
                 messages=api_messages,
                 stream=True,
                 temperature=0.7,
@@ -44,8 +48,9 @@ class LLMClient:
         self,
         messages: List[dict],
         system_prompt: Optional[str] = None,
+        model_name: Optional[str] = None,
     ) -> str:
         full_response = ""
-        async for chunk in self.stream_chat(messages, system_prompt):
+        async for chunk in self.stream_chat(messages, system_prompt, model_name=model_name):
             full_response += chunk
         return full_response
