@@ -3,11 +3,10 @@
 import { useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import type { DiscussionState } from "@/lib/types";
 
-// 每个角色对应的颜色方案（背景 + 文字 + 边框）
+// 每个角色对应的颜色方案
 const SPEAKER_COLORS = [
     {
         bubble: "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800",
@@ -41,7 +40,6 @@ const SPEAKER_COLORS = [
     },
 ];
 
-// 根据 speaker 名称稳定分配颜色索引
 function getSpeakerColorIndex(
     speaker: string,
     speakerOrder: Map<string, number>
@@ -59,7 +57,6 @@ interface MessageStreamProps {
 
 export default function MessageStream({ state, topic }: MessageStreamProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
-    // 稳定的 speaker → 颜色索引映射（在组件生命周期内保持不变）
     const speakerOrderRef = useRef<Map<string, number>>(new Map());
 
     // 自动滚动到底部
@@ -76,7 +73,10 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
         error: "发生错误",
     };
 
-    const statusColor: Record<DiscussionState["status"], string> = {
+    const statusVariant: Record<
+        DiscussionState["status"],
+        "default" | "secondary" | "destructive"
+    > = {
         idle: "secondary",
         connecting: "secondary",
         streaming: "default",
@@ -86,18 +86,20 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
     };
 
     return (
+        // 撑满父容器（父容器必须有确定高度 + overflow-hidden）
         <div className="flex flex-col h-full">
-            {/* 顶部状态栏 */}
-            <div className="flex items-center justify-between px-1 pb-3">
+            {/* 顶部状态栏 — 固定高度 */}
+            <div className="shrink-0 flex items-center justify-between pb-3">
                 <h2 className="text-sm font-medium text-muted-foreground truncate max-w-[70%]">
                     {topic}
                 </h2>
-                <Badge variant={statusColor[state.status] as "default" | "secondary" | "destructive"}>
+                <Badge variant={statusVariant[state.status]}>
                     {statusLabel[state.status]}
                 </Badge>
             </div>
 
-            <ScrollArea className="flex-1 pr-2">
+            {/* 滚动区域 — 原生 overflow-y-auto，撑满剩余高度 */}
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                 <div className="space-y-6 pb-4">
                     {state.rounds.map((round) => (
                         <div key={round.round} className="space-y-3">
@@ -110,7 +112,7 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                                 <Separator className="flex-1" />
                             </div>
 
-                            {/* 该轮的发言气泡 */}
+                            {/* 发言气泡 */}
                             {round.messages.map((msg, msgIdx) => {
                                 const colorIdx = getSpeakerColorIndex(
                                     msg.speaker,
@@ -120,7 +122,6 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
 
                                 return (
                                     <div key={msgIdx} className="space-y-1">
-                                        {/* Speaker badge */}
                                         <div className="flex items-center gap-1.5">
                                             <span
                                                 className={`inline-block w-2 h-2 rounded-full ${colors.dot}`}
@@ -137,7 +138,6 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                                             )}
                                         </div>
 
-                                        {/* 消息气泡 */}
                                         <div
                                             className={`rounded-lg border px-4 py-3 text-sm leading-relaxed ${colors.bubble}`}
                                         >
@@ -146,7 +146,6 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                                                     思考中...
                                                 </span>
                                             )}
-                                            {/* 打字光标 */}
                                             {!msg.isDone && msg.content && (
                                                 <span className="inline-block w-0.5 h-4 bg-current ml-0.5 animate-pulse align-middle" />
                                             )}
@@ -171,12 +170,11 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                             <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm text-amber-800 dark:text-amber-200">
-                                        📝 AI 总结报告
+                                        AI 总结报告
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-sm leading-relaxed whitespace-pre-wrap text-amber-900 dark:text-amber-100">
-                                        {/* 尝试解析 JSON 总结，提取 summary 字段；否则显示原始内容 */}
                                         {(() => {
                                             try {
                                                 const match = state.summary!.match(/\{[\s\S]*\}/);
@@ -215,11 +213,11 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                             — 讨论已结束 —
                         </p>
                     )}
-                </div>
 
-                {/* 自动滚动锚点 */}
-                <div ref={bottomRef} />
-            </ScrollArea>
+                    {/* 自动滚动锚点 */}
+                    <div ref={bottomRef} />
+                </div>
+            </div>
         </div>
     );
 }

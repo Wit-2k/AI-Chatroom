@@ -27,7 +27,6 @@ export default function DiscussionPage() {
     const sessionId = params.sessionId as string;
 
     const [state, setState] = useState<DiscussionState>(INITIAL_STATE);
-    // 从 sessionStorage 读取 topic（由主页写入）
     const [topic, setTopic] = useState("");
     const abortRef = useRef<(() => void) | null>(null);
 
@@ -58,7 +57,6 @@ export default function DiscussionPage() {
                     const lastRound = { ...rounds[rounds.length - 1] };
                     const messages = [...lastRound.messages];
 
-                    // 找到当前 speaker 的最后一条未完成消息
                     const lastMsgIdx = messages.findLastIndex(
                         (m) => m.speaker === event.speaker && !m.isDone
                     );
@@ -69,7 +67,6 @@ export default function DiscussionPage() {
                             content: messages[lastMsgIdx].content + event.content,
                         };
                     } else {
-                        // 新 speaker 开始发言
                         const newMsg: SpeakerMessage = {
                             speaker: event.speaker,
                             content: event.content,
@@ -137,13 +134,9 @@ export default function DiscussionPage() {
 
     useEffect(() => {
         if (!sessionId) return;
-
         const abort = streamDiscussion(sessionId, handleEvent, handleDone);
         abortRef.current = abort;
-
-        return () => {
-            abort();
-        };
+        return () => { abort(); };
     }, [sessionId, handleEvent, handleDone]);
 
     async function handleStop() {
@@ -153,38 +146,39 @@ export default function DiscussionPage() {
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-            <div className="max-w-3xl mx-auto h-screen flex flex-col px-4 py-6">
-                {/* 顶部导航栏 */}
-                <div className="flex items-center justify-between mb-4 shrink-0">
+        // 固定视口高度，禁止页面滚动
+        <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex flex-col">
+            {/* 顶部导航栏 — 固定高度 */}
+            <header className="shrink-0 flex items-center justify-between px-4 py-3 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 text-muted-foreground"
+                    onClick={() => router.push("/")}
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    返回配置
+                </Button>
+
+                {(state.status === "streaming" || state.status === "connecting") && (
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="gap-1 text-muted-foreground"
-                        onClick={() => router.push("/")}
+                        className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                        onClick={handleStop}
                     >
-                        <ArrowLeft className="h-4 w-4" />
-                        返回配置
+                        <Square className="h-3 w-3 fill-current" />
+                        停止讨论
                     </Button>
+                )}
+            </header>
 
-                    {(state.status === "streaming" || state.status === "connecting") && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
-                            onClick={handleStop}
-                        >
-                            <Square className="h-3 w-3 fill-current" />
-                            停止讨论
-                        </Button>
-                    )}
-                </div>
-
-                {/* 消息流区域（占满剩余高度） */}
-                <div className="flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-xl border shadow-sm p-4">
+            {/* 消息流区域 — 占满剩余高度，内部滚动 */}
+            <main className="flex-1 min-h-0 p-4">
+                <div className="h-full bg-white dark:bg-slate-900 rounded-xl border shadow-sm p-4 overflow-hidden">
                     <MessageStream state={state} topic={topic} />
                 </div>
-            </div>
-        </main>
+            </main>
+        </div>
     );
 }
