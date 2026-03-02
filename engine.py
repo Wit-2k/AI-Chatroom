@@ -5,7 +5,7 @@ import random
 import re
 import sys
 from datetime import datetime
-from typing import AsyncGenerator, List, Tuple, Optional
+from typing import AsyncGenerator, Dict, Any, List, Tuple, Optional
 from dataclasses import dataclass
 from rich.console import Console
 from rich.panel import Panel
@@ -34,6 +34,7 @@ class DiscussionEngine:
         max_rounds: int = 3,
         llm_config: LLMConfig = None,
         summary_dir: str = "Summary",
+        api_mode: bool = False,
     ):
         self.topic = topic
         self.personas = personas or [PERSONAS["fitness_coach"], PERSONAS["nutritionist"]]
@@ -46,6 +47,7 @@ class DiscussionEngine:
         self.llm_client = LLMClient(self.llm_config)
         self.console = Console()
         self.summary_dir = summary_dir
+        self.api_mode = api_mode  # True 时禁用 rich Console 输出，供 FastAPI 使用
 
     def _sanitize_filename(self, title: str) -> str:
         sanitized = re.sub(r'[<>:"/\\|?*]', '', title)
@@ -198,22 +200,24 @@ class DiscussionEngine:
         )
 
     async def run_discussion(self) -> AsyncGenerator[Tuple[str, str], None]:
-        self.console.print(
-            Panel.fit(
-                f"[bold cyan]讨论主题：{self.topic}[/bold cyan]\n"
-                f"[dim]参与角色：{' vs '.join([p.name for p in self.personas])}[/dim]\n"
-                f"[dim]轮次设置：{self.max_rounds} 轮[/dim]",
-                title="🤖 AI 讨论室",
-                border_style="blue",
+        if not self.api_mode:
+            self.console.print(
+                Panel.fit(
+                    f"[bold cyan]讨论主题：{self.topic}[/bold cyan]\n"
+                    f"[dim]参与角色：{' vs '.join([p.name for p in self.personas])}[/dim]\n"
+                    f"[dim]轮次设置：{self.max_rounds} 轮[/dim]",
+                    title="🤖 AI 讨论室",
+                    border_style="blue",
+                )
             )
-        )
-        self.console.print()
+            self.console.print()
 
         for round_num in range(1, self.max_rounds + 1):
             self.state.current_round = round_num
-            self.console.print(
-                f"[bold yellow]━━━ 第 {round_num} 轮 ━━━[/bold yellow]"
-            )
+            if not self.api_mode:
+                self.console.print(
+                    f"[bold yellow]━━━ 第 {round_num} 轮 ━━━[/bold yellow]"
+                )
 
             for speaker_index, speaker in enumerate(self.personas):
                 self.state.current_speaker_index = speaker_index
@@ -225,18 +229,21 @@ class DiscussionEngine:
                 ]
 
                 full_response = ""
-                speaker_color = "green" if speaker_index == 0 else "magenta"
 
-                self.console.print(
-                    f"\n[bold {speaker_color}]💬 {speaker.name}：[/bold {speaker_color}]",
-                    end="",
-                )
+                if not self.api_mode:
+                    speaker_color = "green" if speaker_index == 0 else "magenta"
+                    self.console.print(
+                        f"\n[bold {speaker_color}]💬 {speaker.name}：[/bold {speaker_color}]",
+                        end="",
+                    )
 
                 async for chunk in self.llm_client.stream_chat(messages, model_name=speaker.model_name):
                     full_response += chunk
-                    print(chunk, end="", flush=True)
+                    if not self.api_mode:
+                        print(chunk, end="", flush=True)
 
-                print()
+                if not self.api_mode:
+                    print()
 
                 message = Message(
                     role=MessageRole.ASSISTANT,
@@ -249,20 +256,23 @@ class DiscussionEngine:
 
                 await asyncio.sleep(0.5)
 
-            self.console.print()
+            if not self.api_mode:
+                self.console.print()
 
-        self.console.print(
-            Panel.fit(
-                "[bold cyan]正在生成讨论总结...[/bold cyan]",
-                border_style="yellow",
+        if not self.api_mode:
+            self.console.print(
+                Panel.fit(
+                    "[bold cyan]正在生成讨论总结...[/bold cyan]",
+                    border_style="yellow",
+                )
             )
-        )
 
         summary_prompt = self._build_summary_prompt()
         messages = [{"role": "user", "content": summary_prompt}]
 
         summary_response = ""
-        self.console.print("\n[dim]正在生成总结...[/dim]")
+        if not self.api_mode:
+            self.console.print("\n[dim]正在生成总结...[/dim]")
 
         async for chunk in self.llm_client.stream_chat(messages, max_tokens=2000):
             summary_response += chunk
@@ -270,31 +280,131 @@ class DiscussionEngine:
         self.state.is_completed = True
 
         summary_result = self._parse_summary_response(summary_response)
-        
-        if summary_result:
-            filepath = self._save_summary(summary_result)
-            
-            self.console.print()
-            self.console.print(
-                Panel.fit(
-                    f"[bold green]📝 讨论总结[/bold green]\n\n"
-                    f"[cyan]{summary_result.summary}[/cyan]\n\n"
-                    f"[dim]完整总结已保存至：{filepath}[/dim]",
-                    border_style="green",
+
+        if not self.api_mode:
+            if summary_result:
+                filepath = self._save_summary(summary_result)
+                self.console.print()
+                self.console.print(
+                    Panel.fit(
+                        f"[bold green]📝 讨论总结[/bold green]\n\n"
+                        f"[cyan]{summary_result.summary}[/cyan]\n\n"
+                        f"[dim]完整总结已保存至：{filepath}[/dim]",
+                        border_style="green",
+                    )
                 )
-            )
-        else:
-            self.console.print()
-            self.console.print(
-                Panel.fit(
-                    f"[bold yellow]📝 讨论总结[/bold yellow]\n\n"
-                    f"{summary_response[:200]}...\n\n"
-                    f"[dim]（总结格式解析失败，未保存文件）[/dim]",
-                    border_style="yellow",
+            else:
+                self.console.print()
+                self.console.print(
+                    Panel.fit(
+                        f"[bold yellow]📝 讨论总结[/bold yellow]\n\n"
+                        f"{summary_response[:200]}...\n\n"
+                        f"[dim]（总结格式解析失败，未保存文件）[/dim]",
+                        border_style="yellow",
+                    )
                 )
-            )
 
         yield ("总结", summary_response)
+
+    async def run_discussion_api(
+        self,
+        stop_event: Optional[asyncio.Event] = None,
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        API 专用流式讨论方法，逐 chunk yield 结构化字典，供 FastAPI SSE 端点使用。
+
+        事件类型：
+        - chunk:        角色发言的流式片段 {"type":"chunk","speaker":str,"content":str}
+        - message_done: 某角色本轮发言完毕 {"type":"message_done","speaker":str,"full_content":str}
+        - round_start:  新一轮开始         {"type":"round_start","round":int,"total_rounds":int}
+        - summary:      讨论总结完成       {"type":"summary","content":str,"saved_path":str|None}
+        - done:         全部讨论结束       {"type":"done"}
+        - error:        发生错误           {"type":"error","message":str}
+        """
+        try:
+            for round_num in range(1, self.max_rounds + 1):
+                # 检查停止信号
+                if stop_event and stop_event.is_set():
+                    yield {"type": "done"}
+                    return
+
+                self.state.current_round = round_num
+                yield {
+                    "type": "round_start",
+                    "round": round_num,
+                    "total_rounds": self.max_rounds,
+                }
+
+                for speaker_index, speaker in enumerate(self.personas):
+                    # 检查停止信号
+                    if stop_event and stop_event.is_set():
+                        yield {"type": "done"}
+                        return
+
+                    self.state.current_speaker_index = speaker_index
+
+                    user_prompt = self._build_context_prompt(speaker, round_num)
+                    messages = [
+                        {"role": "system", "content": speaker.system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ]
+
+                    full_response = ""
+
+                    async for chunk in self.llm_client.stream_chat(
+                        messages, model_name=speaker.model_name
+                    ):
+                        full_response += chunk
+                        yield {
+                            "type": "chunk",
+                            "speaker": speaker.name,
+                            "content": chunk,
+                        }
+
+                    message = Message(
+                        role=MessageRole.ASSISTANT,
+                        content=full_response,
+                        speaker=speaker.name,
+                    )
+                    self.state.add_message(message)
+
+                    yield {
+                        "type": "message_done",
+                        "speaker": speaker.name,
+                        "full_content": full_response,
+                    }
+
+                    await asyncio.sleep(0.5)
+
+            # 生成总结
+            if stop_event and stop_event.is_set():
+                yield {"type": "done"}
+                return
+
+            summary_prompt = self._build_summary_prompt()
+            summary_messages = [{"role": "user", "content": summary_prompt}]
+            summary_response = ""
+
+            async for chunk in self.llm_client.stream_chat(summary_messages, max_tokens=2000):
+                summary_response += chunk
+
+            self.state.is_completed = True
+
+            summary_result = self._parse_summary_response(summary_response)
+            saved_path: Optional[str] = None
+            if summary_result:
+                saved_path = self._save_summary(summary_result)
+
+            yield {
+                "type": "summary",
+                "content": summary_response,
+                "saved_path": saved_path,
+            }
+
+            yield {"type": "done"}
+
+        except Exception as e:
+            yield {"type": "error", "message": str(e)}
 
     async def run(self):
         async for speaker, content in self.run_discussion():
