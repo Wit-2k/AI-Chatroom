@@ -214,7 +214,7 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                                     {state.summary && (
                                         <button
                                             className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 const raw = state.summary!;
                                                 let filename = "讨论总结";
                                                 let fileContent = raw;
@@ -226,13 +226,37 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                                                         if (data.content) fileContent = data.content;
                                                     }
                                                 } catch { /* ignore */ }
-                                                const blob = new Blob([fileContent], { type: "text/markdown;charset=utf-8" });
-                                                const url = URL.createObjectURL(blob);
-                                                const a = document.createElement("a");
-                                                a.href = url;
-                                                a.download = `${filename}.md`;
-                                                a.click();
-                                                URL.revokeObjectURL(url);
+
+                                                // Tauri 环境：使用原生保存对话框
+                                                if (typeof window !== 'undefined' && '__TAURI__' in window) {
+                                                    try {
+                                                        const { save } = await import('@tauri-apps/plugin-dialog');
+                                                        const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+
+                                                        const filePath = await save({
+                                                            defaultPath: `${filename}.md`,
+                                                            filters: [{
+                                                                name: 'Markdown',
+                                                                extensions: ['md']
+                                                            }]
+                                                        });
+
+                                                        if (filePath) {
+                                                            await writeTextFile(filePath, fileContent);
+                                                        }
+                                                    } catch (err) {
+                                                        console.error('保存文件失败:', err);
+                                                    }
+                                                } else {
+                                                    // Web 环境：使用 Blob 下载
+                                                    const blob = new Blob([fileContent], { type: "text/markdown;charset=utf-8" });
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement("a");
+                                                    a.href = url;
+                                                    a.download = `${filename}.md`;
+                                                    a.click();
+                                                    URL.revokeObjectURL(url);
+                                                }
                                             }}
                                         >
                                             📥 下载完整总结报告
