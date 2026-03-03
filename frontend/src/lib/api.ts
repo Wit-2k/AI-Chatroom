@@ -4,14 +4,9 @@ import type {
     SSEEvent,
 } from "./types";
 
-// 普通 REST 请求走 Next.js 代理（/api/* → localhost:8000）
+// 都走 Next.js 代理
 const API_BASE = "/api";
-
-// SSE 流式请求直接连后端，绕过 Next.js rewrites 缓冲
-const STREAM_BASE =
-    typeof window !== "undefined"
-        ? "http://localhost:8000"
-        : "http://localhost:8000";
+const STREAM_BASE = "/api";
 
 /**
  * 启动一次新的 AI 讨论，返回 session_id

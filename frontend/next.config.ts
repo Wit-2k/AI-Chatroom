@@ -1,15 +1,11 @@
-import type { NextConfig } from "next";
+const BACKEND = process.env.BACKEND_URL;
 
-const nextConfig: NextConfig = {
+export default {
   async rewrites() {
     return [
       {
-        // 将所有 /api/* 请求代理到 FastAPI 后端
-        source: "/api/:path*",
-        destination: "http://localhost:8000/:path*",
+        source: "/api/:path*", destination: `${BACKEND}/api/:path*`
       },
     ];
   },
 };
-
-export default nextConfig;
