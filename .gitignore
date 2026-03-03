@@ -19,7 +19,8 @@ config.json
 
 uv.lock
 .python-version
-PLAN.md
+*.md
+!README.md
 
 # ── Next.js / Node ───────────────────────────────────────
 frontend/node_modules/
