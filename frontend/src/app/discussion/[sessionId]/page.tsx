@@ -36,7 +36,9 @@ export default function DiscussionPage() {
     }, []);
 
     const handleEvent = useCallback((event: SSEEvent) => {
-        setState((prev) => {
+        // chunk 事件用 flushSync 强制同步渲染，实现打字机效果
+        // 其他事件正常批量更新即可
+        const updater = (prev: DiscussionState): DiscussionState => {
             switch (event.type) {
                 case "round_start": {
                     const newRound: RoundGroup = {
@@ -99,11 +101,20 @@ export default function DiscussionPage() {
                 }
 
                 case "summary":
+                    // 先只切换到 summarizing 状态，让动画有机会渲染
+                    // summary 内容延一帧后再填入
+                    setTimeout(() => {
+                        setState((s) => ({
+                            ...s,
+                            summary: event.content,
+                            savedPath: event.saved_path,
+                        }));
+                    }, 800);
                     return {
                         ...prev,
                         status: "summarizing",
-                        summary: event.content,
-                        savedPath: event.saved_path,
+                        summary: null,
+                        savedPath: null,
                     };
 
                 case "done":
@@ -115,7 +126,9 @@ export default function DiscussionPage() {
                 default:
                     return prev;
             }
-        });
+        };
+
+        setState(updater);
     }, []);
 
     const handleDone = useCallback((error?: string) => {

@@ -156,6 +156,29 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                         </div>
                     ))}
 
+                    {/* 总结中提示 */}
+                    {state.status === "summarizing" && !state.summary && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Separator className="flex-1" />
+                                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap px-2">
+                                    讨论总结
+                                </span>
+                                <Separator className="flex-1" />
+                            </div>
+                            <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+                                <span className="inline-flex gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:0ms]" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:150ms]" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:300ms]" />
+                                </span>
+                                <span className="text-sm text-amber-700 dark:text-amber-300">
+                                    正在生成总结...
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* 总结卡片 */}
                     {state.summary && (
                         <div className="space-y-3">

@@ -4,7 +4,14 @@ import type {
     SSEEvent,
 } from "./types";
 
+// 普通 REST 请求走 Next.js 代理（/api/* → localhost:8000）
 const API_BASE = "/api";
+
+// SSE 流式请求直接连后端，绕过 Next.js rewrites 缓冲
+const STREAM_BASE =
+    typeof window !== "undefined"
+        ? "http://localhost:8000"
+        : "http://localhost:8000";
 
 /**
  * 启动一次新的 AI 讨论，返回 session_id
@@ -42,9 +49,11 @@ export function streamDiscussion(
     (async () => {
         try {
             const res = await fetch(
-                `${API_BASE}/discussion/stream/${sessionId}`,
+                `${STREAM_BASE}/discussion/stream/${sessionId}`,
                 {
                     signal: controller.signal,
+                    // cache: "no-store" 确保不缓存，直接流式读取
+                    cache: "no-store",
                     headers: { Accept: "text/event-stream" },
                 }
             );
@@ -84,6 +93,10 @@ export function streamDiscussion(
                         if (event.type === "done" || event.type === "error") {
                             onDone(event.type === "error" ? event.message : undefined);
                             return;
+                        }
+                        // chunk 事件后让出主线程，使 React 有机会渲染
+                        if (event.type === "chunk") {
+                            await new Promise<void>((r) => setTimeout(r, 0));
                         }
                     } catch {
                         // 忽略非 JSON 行
