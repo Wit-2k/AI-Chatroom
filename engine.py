@@ -318,7 +318,7 @@ class DiscussionEngine:
         - message_done: 某角色本轮发言完毕 {"type":"message_done","speaker":str,"full_content":str}
         - round_start:  新一轮开始         {"type":"round_start","round":int,"total_rounds":int}
         - summary_start:开始生成总结       {"type":"summary_start"}
-        - summary:      讨论总结完成       {"type":"summary","content":str,"saved_path":str|None}
+        - summary:      讨论总结完成       {"type":"summary","content":str}
         - done:         全部讨论结束       {"type":"done"}
         - error:        发生错误           {"type":"error","message":str}
         """
@@ -393,15 +393,9 @@ class DiscussionEngine:
 
             self.state.is_completed = True
 
-            summary_result = self._parse_summary_response(summary_response)
-            saved_path: Optional[str] = None
-            if summary_result:
-                saved_path = self._save_summary(summary_result)
-
             yield {
                 "type": "summary",
                 "content": summary_response,
-                "saved_path": saved_path,
             }
 
             yield {"type": "done"}

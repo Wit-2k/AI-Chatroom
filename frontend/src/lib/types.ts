@@ -46,7 +46,6 @@ export interface SummaryStartEvent {
 export interface SummaryEvent {
     type: "summary";
     content: string;
-    saved_path: string | null;
 }
 
 export interface DoneEvent {
@@ -93,6 +92,5 @@ export interface DiscussionState {
     status: DiscussionStatus;
     rounds: RoundGroup[];
     summary: string | null;
-    savedPath: string | null;
     errorMessage: string | null;
 }

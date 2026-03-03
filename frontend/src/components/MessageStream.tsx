@@ -211,10 +211,30 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                                             return state.summary;
                                         })()}
                                     </div>
-                                    {state.savedPath && (
-                                        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-                                            完整报告已保存至：{state.savedPath}
-                                        </p>
+                                    {state.summary && (
+                                        <button
+                                            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
+                                            onClick={() => {
+                                                const raw = state.summary!;
+                                                let filename = "讨论总结";
+                                                try {
+                                                    const match = raw.match(/\{[\s\S]*\}/);
+                                                    if (match) {
+                                                        const data = JSON.parse(match[0]);
+                                                        if (data.title) filename = data.title;
+                                                    }
+                                                } catch { /* ignore */ }
+                                                const blob = new Blob([raw], { type: "text/markdown;charset=utf-8" });
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement("a");
+                                                a.href = url;
+                                                a.download = `${filename}.md`;
+                                                a.click();
+                                                URL.revokeObjectURL(url);
+                                            }}
+                                        >
+                                            📥 下载完整总结报告
+                                        </button>
                                     )}
                                 </CardContent>
                             </Card>

@@ -17,7 +17,6 @@ const INITIAL_STATE: DiscussionState = {
     status: "connecting",
     rounds: [],
     summary: null,
-    savedPath: null,
     errorMessage: null,
 };
 
@@ -99,12 +98,11 @@ export default function DiscussionPage() {
                 }
 
                 case "summary_start":
-                    // 关键：最后一条发言结束后立刻进入“总结中”状态
+                    // 关键：最后一条发言结束后立刻进入"总结中"状态
                     return {
                         ...prev,
                         status: "summarizing",
                         summary: null,
-                        savedPath: null,
                     };
 
                 case "summary":
@@ -113,7 +111,6 @@ export default function DiscussionPage() {
                         ...prev,
                         status: "done",
                         summary: event.content,
-                        savedPath: event.saved_path,
                     };
 
                 case "done":

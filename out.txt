@@ -1,1 +1,0 @@
-{"session_id":"96927700-b540-49b6-b41c-27dcbdc565b6","message":"讨论已创建，主题：test，共 1 轮"}

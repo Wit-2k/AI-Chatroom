@@ -76,8 +76,7 @@ async def test_start_and_stream():
                     elif etype == "message_done":
                         print(f"\n  [message_done] [{event['speaker']}]")
                     elif etype == "summary":
-                        saved = event.get("saved_path") or "(not saved)"
-                        print(f"  [summary] saved_path={saved}")
+                        print(f"  [summary] content length={len(event.get('content', ''))}")
                     elif etype == "done":
                         print("  [done]")
                         break
