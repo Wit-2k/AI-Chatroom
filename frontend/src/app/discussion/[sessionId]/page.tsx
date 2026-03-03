@@ -36,8 +36,6 @@ export default function DiscussionPage() {
     }, []);
 
     const handleEvent = useCallback((event: SSEEvent) => {
-        // chunk 事件用 flushSync 强制同步渲染，实现打字机效果
-        // 其他事件正常批量更新即可
         const updater = (prev: DiscussionState): DiscussionState => {
             switch (event.type) {
                 case "round_start": {
@@ -100,16 +98,8 @@ export default function DiscussionPage() {
                     return { ...prev, rounds };
                 }
 
-                case "summary":
-                    // 先只切换到 summarizing 状态，让动画有机会渲染
-                    // summary 内容延一帧后再填入
-                    setTimeout(() => {
-                        setState((s) => ({
-                            ...s,
-                            summary: event.content,
-                            savedPath: event.saved_path,
-                        }));
-                    }, 800);
+                case "summary_start":
+                    // 关键：最后一条发言结束后立刻进入“总结中”状态
                     return {
                         ...prev,
                         status: "summarizing",
@@ -117,7 +107,20 @@ export default function DiscussionPage() {
                         savedPath: null,
                     };
 
+                case "summary":
+                    // 总结内容到达时直接展示卡片并结束
+                    return {
+                        ...prev,
+                        status: "done",
+                        summary: event.content,
+                        savedPath: event.saved_path,
+                    };
+
                 case "done":
+                    // 已进入总结中且 summary 还未到时，忽略 done，避免覆盖动画
+                    if (prev.status === "summarizing" && !prev.summary) {
+                        return prev;
+                    }
                     return { ...prev, status: "done" };
 
                 case "error":

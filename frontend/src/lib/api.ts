@@ -19,7 +19,8 @@ const STREAM_BASE =
 export async function startDiscussion(
     req: StartDiscussionRequest
 ): Promise<StartDiscussionResponse> {
-    const res = await fetch(`${API_BASE}/discussion/start`, {
+    const url = `${API_BASE}/discussion/start`;
+    const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(req),
@@ -48,8 +49,9 @@ export function streamDiscussion(
 
     (async () => {
         try {
+            const streamUrl = `${STREAM_BASE}/discussion/stream/${sessionId}`;
             const res = await fetch(
-                `${STREAM_BASE}/discussion/stream/${sessionId}`,
+                streamUrl,
                 {
                     signal: controller.signal,
                     // cache: "no-store" 确保不缓存，直接流式读取

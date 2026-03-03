@@ -317,6 +317,7 @@ class DiscussionEngine:
         - chunk:        角色发言的流式片段 {"type":"chunk","speaker":str,"content":str}
         - message_done: 某角色本轮发言完毕 {"type":"message_done","speaker":str,"full_content":str}
         - round_start:  新一轮开始         {"type":"round_start","round":int,"total_rounds":int}
+        - summary_start:开始生成总结       {"type":"summary_start"}
         - summary:      讨论总结完成       {"type":"summary","content":str,"saved_path":str|None}
         - done:         全部讨论结束       {"type":"done"}
         - error:        发生错误           {"type":"error","message":str}
@@ -380,6 +381,8 @@ class DiscussionEngine:
             if stop_event and stop_event.is_set():
                 yield {"type": "done"}
                 return
+
+            yield {"type": "summary_start"}
 
             summary_prompt = self._build_summary_prompt()
             summary_messages = [{"role": "user", "content": summary_prompt}]

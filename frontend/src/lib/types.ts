@@ -39,6 +39,10 @@ export interface MessageDoneEvent {
     full_content: string;
 }
 
+export interface SummaryStartEvent {
+    type: "summary_start";
+}
+
 export interface SummaryEvent {
     type: "summary";
     content: string;
@@ -58,6 +62,7 @@ export type SSEEvent =
     | RoundStartEvent
     | ChunkEvent
     | MessageDoneEvent
+    | SummaryStartEvent
     | SummaryEvent
     | DoneEvent
     | ErrorEvent;
