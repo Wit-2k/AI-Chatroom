@@ -21,6 +21,8 @@ uv.lock
 .python-version
 *.md
 !README.md
+!AGENTS.md
+!plans/
 
 # ── Next.js / Node ───────────────────────────────────────
 frontend/node_modules/
@@ -32,3 +34,7 @@ frontend/yarn-debug.log*
 frontend/yarn-error.log*
 .vercel
 .env*.local
+
+# ── Tauri ────────────────────────────────────────────────
+frontend/src-tauri/target/
+frontend/src-tauri/gen/

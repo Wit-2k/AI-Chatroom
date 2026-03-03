@@ -2,7 +2,7 @@
 
 多个 AI 角色围绕你指定的主题展开多轮辩论，最终生成结构化的 Markdown 总结报告。
 
-支持 **CLI 终端** 和 **Web 界面** 两种使用方式。
+支持 **CLI 终端**、**Web 界面** 和 **桌面应用** 三种使用方式。
 
 ![Python](https://img.shields.io/badge/Python-3.13+-blue) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -63,6 +63,28 @@ BACKEND_URL=http://localhost:8000
 
 Web 模式下，讨论结束后可在浏览器中直接下载总结报告（`.md` 文件）。
 
+### 方式三：桌面应用模式（Tauri）
+
+需要安装 [Rust 工具链](https://rustup.rs/)。
+
+**开发模式**（需先配置好 `.env`）
+
+```bash
+cd frontend
+npm run tauri:dev
+```
+
+应用启动时会自动拉起 Python 后端，关闭时自动终止。
+
+**生产构建**
+
+```bash
+cd frontend
+npm run tauri:build
+```
+
+构建产物在 `frontend/src-tauri/target/release/bundle/` 目录下。
+
 ## 自定义角色
 
 编辑 `config.json` 配置参与讨论的角色、主题和轮数：
@@ -111,10 +133,14 @@ CLI 模式下自动保存至 `Summary/` 目录；Web 模式下通过浏览器下
 ├── config.json        # 运行时角色配置
 ├── Summary/           # CLI 模式总结输出目录
 └── frontend/          # Next.js Web 前端
-    └── src/
-        ├── app/           # 页面路由
-        ├── components/    # UI 组件
-        └── lib/           # API 调用、类型定义
+    ├── src/
+    │   ├── app/           # 页面路由
+    │   ├── components/    # UI 组件
+    │   └── lib/           # API 调用、类型定义
+    └── src-tauri/         # Tauri 桌面应用（Rust）
+        ├── src/main.rs    # 入口 + sidecar 管理
+        ├── tauri.conf.json
+        └── Cargo.toml
 ```
 
 ## 技术栈
@@ -122,3 +148,5 @@ CLI 模式下自动保存至 `Summary/` 目录；Web 模式下通过浏览器下
 **后端：** Python 3.13+ · FastAPI · AsyncOpenAI · Rich（CLI 渲染）
 
 **前端：** Next.js 16 · React 19 · Tailwind CSS · shadcn/ui · SSE 流式通信
+
+**桌面应用：** Tauri 2 · Rust · Python Sidecar

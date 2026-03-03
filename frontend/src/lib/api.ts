@@ -4,9 +4,16 @@ import type {
     SSEEvent,
 } from "./types";
 
-// 都走 Next.js 代理
-const API_BASE = "/api";
-const STREAM_BASE = "/api";
+// 运行时判断：Tauri 桌面模式直连后端，Web 模式走 Next.js 代理
+function getApiBase(): string {
+    if (typeof window !== 'undefined' && '__TAURI__' in window) {
+        return 'http://localhost:8000';
+    }
+    return '/api';
+}
+
+const API_BASE = getApiBase();
+const STREAM_BASE = getApiBase();
 
 /**
  * 启动一次新的 AI 讨论，返回 session_id
