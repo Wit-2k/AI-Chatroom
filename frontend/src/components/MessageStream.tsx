@@ -217,14 +217,16 @@ export default function MessageStream({ state, topic }: MessageStreamProps) {
                                             onClick={() => {
                                                 const raw = state.summary!;
                                                 let filename = "讨论总结";
+                                                let fileContent = raw;
                                                 try {
                                                     const match = raw.match(/\{[\s\S]*\}/);
                                                     if (match) {
                                                         const data = JSON.parse(match[0]);
                                                         if (data.title) filename = data.title;
+                                                        if (data.content) fileContent = data.content;
                                                     }
                                                 } catch { /* ignore */ }
-                                                const blob = new Blob([raw], { type: "text/markdown;charset=utf-8" });
+                                                const blob = new Blob([fileContent], { type: "text/markdown;charset=utf-8" });
                                                 const url = URL.createObjectURL(blob);
                                                 const a = document.createElement("a");
                                                 a.href = url;
